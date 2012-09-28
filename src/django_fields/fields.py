@@ -34,7 +34,7 @@ class BaseEncryptedField(models.Field):
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type], -1)
         except:
             imp = __import__('Crypto.Cipher', globals(), locals(), [self.cipher_type])
-        self.cipher = getattr(imp, self.cipher_type).new(settings.SECRET_KEY[:32])
+        self.cipher = getattr(imp,self.cipher_type).new(settings.DF_ENCRYPTION_KEY[:32])
         self.prefix = '$%s$' % self.cipher_type
 
         max_length = kwargs.get('max_length', 40)
@@ -69,9 +69,12 @@ class BaseEncryptedField(models.Field):
         return value
 
     def get_db_prep_value(self, value, connection=None, prepared=False):
+        if value is None:
+            return None
+
         value = smart_str(value)
 
-        if value is not None and not self._is_encrypted(value):
+        if not self._is_encrypted(value):
             padding  = self._get_padding(value)
             if padding > 0:
                 value += "\0" + ''.join([random.choice(string.printable)
